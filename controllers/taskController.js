@@ -51,15 +51,23 @@ const createTask = async (req, res) => {
 const updateTask = async (req, res) => {
   const { id } = req.params;
   const { title, description, status } = req.body;
+  const isAdmin = req.user.role === "admin";
+
   try {
-    const task = await Task.findOne({ where: { id, userId: req.user.id } });
+    const where = isAdmin ? { id } : { id, userId: req.user.id };
+
+    const task = await Task.findOne({ where });
+
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
     }
+
     await task.update({ title, description, status });
+
     const updatedTask = await Task.findByPk(id, {
       include: [{ model: User, attributes: ["username"] }],
     });
+
     res.json(updatedTask);
   } catch (err) {
     res.status(500).json({ message: err.message });
